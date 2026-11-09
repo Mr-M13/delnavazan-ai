@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Response, status
 
-from .settings import settings
+from .database import is_ready
 
 app = FastAPI(title="Delnavazan AI", version="0.1.0")
 
@@ -12,7 +12,7 @@ def liveness() -> dict[str, str]:
 
 @app.get("/health/ready")
 def readiness(response: Response) -> dict[str, str]:
-    if not settings.database_url:
+    if not is_ready():
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {"status": "not_ready"}
     return {"status": "ready"}
