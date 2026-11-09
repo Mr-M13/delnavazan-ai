@@ -2,6 +2,7 @@
 import logging
 import signal
 import threading
+import uuid
 
 from .database import connect
 from .logging_config import configure_logging
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def claim_job(conn):
+    token = uuid.uuid4()
     with conn.transaction():
         return conn.execute(
             """WITH candidate AS (
@@ -20,9 +22,10 @@ def claim_job(conn):
                 ORDER BY available_at, id FOR UPDATE SKIP LOCKED LIMIT 1
             )
             UPDATE jobs SET state='leased', attempts=attempts+1,
-                leased_until=NOW()+INTERVAL '60 seconds'
+                leased_until=NOW()+INTERVAL '60 seconds', claim_token=%s
             WHERE id=(SELECT id FROM candidate)
-            RETURNING id, kind, payload, attempts, max_attempts""",
+            RETURNING id, kind, payload, attempts, max_attempts, claim_token""",
+            (token,),
         ).fetchone()
 
 
@@ -30,36 +33,35 @@ def process_one(conn) -> bool:
     job = claim_job(conn)
     if job is None:
         return False
-    # Persist the lease before executing a handler so concurrent workers cannot
-    # reclaim this job while its side effect is in progress.
     conn.commit()
-    job_id, kind, payload, attempts, max_attempts = job
+    job_id, kind, payload, attempts, max_attempts, claim_token = job
     logger.info("job_claimed id=%s kind=%s", job_id, kind)
     try:
         if kind not in HANDLERS:
             raise ValueError("Unregistered job type")
         HANDLERS[kind](payload)
-    except Exception:  # noqa: BLE001 - job boundary must quarantine all handler failures
-        # Never persist exception text: provider errors may contain sensitive content.
+    except Exception:  # noqa: BLE001 - quarantine all job handler failures
         logger.warning("job_handler_failed id=%s kind=%s", job_id, kind)
         if attempts >= max_attempts:
             conn.execute(
                 "UPDATE jobs SET state='dead', leased_until=NULL, last_error=%s "
-                "WHERE id=%s",
-                ("job_failed", job_id),
+                "WHERE id=%s AND state='leased' AND claim_token=%s",
+                ("job_failed", job_id, claim_token),
             )
         else:
             delay = min(3600, 2 ** min(attempts, 10))
             conn.execute(
                 "UPDATE jobs SET state='pending', leased_until=NULL, "
                 "available_at=NOW()+(%s * INTERVAL '1 second'), last_error=%s "
-                "WHERE id=%s",
-                (delay, "job_failed", job_id),
+                "WHERE id=%s AND state='leased' AND claim_token=%s",
+                (delay, "job_failed", job_id, claim_token),
             )
     else:
         logger.info("job_completed id=%s", job_id)
         conn.execute(
-            "UPDATE jobs SET state='done', leased_until=NULL WHERE id=%s", (job_id,)
+            "UPDATE jobs SET state='done', leased_until=NULL "
+            "WHERE id=%s AND state='leased' AND claim_token=%s",
+            (job_id, claim_token),
         )
     conn.commit()
     return True
