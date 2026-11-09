@@ -30,7 +30,9 @@ def apply_migrations() -> list[str]:
                     )
                     applied.append(path.name)
         finally:
+            conn.rollback()
             conn.execute("SELECT pg_advisory_unlock(%s)", (LOCK_ID,))
+            conn.commit()
     return applied
 
 

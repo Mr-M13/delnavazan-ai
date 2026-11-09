@@ -1,9 +1,13 @@
 """Durable internal job runner. External communication handlers are not registered."""
-import time
+import logging
+import signal
+import threading
 
 from .database import connect
+from .logging_config import configure_logging
 
 HANDLERS = {}
+logger = logging.getLogger(__name__)
 
 
 def claim_job(conn):
@@ -27,12 +31,14 @@ def process_one(conn) -> bool:
     if job is None:
         return False
     job_id, kind, payload, attempts, max_attempts = job
+    logger.info("job_claimed id=%s kind=%s", job_id, kind)
     try:
         if kind not in HANDLERS:
             raise ValueError("Unregistered job type")
         HANDLERS[kind](payload)
     except Exception:  # noqa: BLE001 - job boundary must quarantine all handler failures
         # Never persist exception text: provider errors may contain sensitive content.
+        logger.warning("job_handler_failed id=%s kind=%s", job_id, kind)
         if attempts >= max_attempts:
             conn.execute(
                 "UPDATE jobs SET state='dead', leased_until=NULL, last_error=%s "
@@ -48,6 +54,7 @@ def process_one(conn) -> bool:
                 (delay, "job_failed", job_id),
             )
     else:
+        logger.info("job_completed id=%s", job_id)
         conn.execute(
             "UPDATE jobs SET state='done', leased_until=NULL WHERE id=%s", (job_id,)
         )
@@ -55,11 +62,24 @@ def process_one(conn) -> bool:
     return True
 
 
-def main() -> None:
+def run(stop: threading.Event) -> None:
     with connect() as conn:
-        while True:
+        while not stop.is_set():
             if not process_one(conn):
-                time.sleep(2)
+                stop.wait(2)
+
+
+def main() -> None:
+    configure_logging()
+    stop = threading.Event()
+
+    def shutdown(_signum, _frame) -> None:
+        logger.info("worker_shutdown_requested")
+        stop.set()
+
+    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGINT, shutdown)
+    run(stop)
 
 
 if __name__ == "__main__":
