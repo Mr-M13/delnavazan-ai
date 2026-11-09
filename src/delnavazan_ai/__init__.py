@@ -1,0 +1,1 @@
+"""Delnavazan AI service."""
