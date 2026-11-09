@@ -21,3 +21,10 @@ Use dedicated PostgreSQL, never WordPress database credentials. Do not set live 
 
 ## Remaining AI-01 work
 Implement real DB connectivity/readiness, migration runner and rollback, durable leased worker, retry/dead-letter handling, redacted structured logs, correlation IDs, integration tests and secret scanning. Validate on supported hosting before any launch.
+
+## AI-01 database and job foundation (development branch)
+- `python -m delnavazan_ai.migrate` applies forward-only numbered SQL migrations to a **dedicated** database. Rollback migrations are not implemented.
+- `/health/ready` now checks actual PostgreSQL connectivity.
+- `python -m delnavazan_ai.worker` polls a durable leased job queue; **no handlers are registered**, so it cannot send messages.
+- Job retries use exponential backoff and dead-letter after maximum attempts.
+- Database integration tests and production-grade shutdown/monitoring remain pending.
