@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     enable_outbound_messages: bool = False
     enable_ai_responses: bool = False
     openai_api_key: str = ""
+    openai_model: str = "gpt-4.1-mini"
     chatwoot_api_token: str = ""
     meta_access_token: str = ""
     timezone: str = "Australia/Brisbane"
