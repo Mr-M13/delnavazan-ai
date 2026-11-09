@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "intro-process-draft",
+      "title": "کلاس آشنایی",
+      "text": "متن نهایی این بخش باید از سوی مدیر دلنوازان تأیید شود.",
+      "source_url": "https://delnavazan.com/",
+      "version": 1,
+      "status": "draft",
+      "approved_by": null,
+      "effective_from": "2026-11-09",
+      "effective_until": null,
+      "tags": ["معارفه", "آشنایی", "intro"]
+    },
+    {
+      "id": "instruments-draft",
+      "title": "سازهای آموزشی",
+      "text": "فهرست سازها و وضعیت ارائه هر دوره پس از بررسی منبع عمومی تأیید خواهد شد.",
+      "source_url": "https://delnavazan.com/",
+      "version": 1,
+      "status": "draft",
+      "approved_by": null,
+      "effective_from": "2026-11-09",
+      "effective_until": null,
+      "tags": ["ساز", "تار", "سه تار", "instruments"]
+    }
+  ]
+}

@@ -21,3 +21,8 @@ Use dedicated PostgreSQL, never WordPress database credentials. Do not set live 
 
 ## Remaining AI-01 work
 Implement real DB connectivity/readiness, migration runner and rollback, durable leased worker, retry/dead-letter handling, redacted structured logs, correlation IDs, integration tests and secret scanning. Validate on supported hosting before any launch.
+
+## AI-03 draft: public knowledge
+`knowledge/public-v1.json` contains non-published drafts only. `knowledge.py` loads
+explicitly approved, time-valid HTTPS-sourced entries and retrieves by keyword.
+No live website fetch or ingestion is performed.
