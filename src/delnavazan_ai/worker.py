@@ -30,6 +30,9 @@ def process_one(conn) -> bool:
     job = claim_job(conn)
     if job is None:
         return False
+    # Persist the lease before executing a handler so concurrent workers cannot
+    # reclaim this job while its side effect is in progress.
+    conn.commit()
     job_id, kind, payload, attempts, max_attempts = job
     logger.info("job_claimed id=%s kind=%s", job_id, kind)
     try:
