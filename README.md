@@ -21,3 +21,9 @@ Use dedicated PostgreSQL, never WordPress database credentials. Do not set live 
 
 ## Remaining AI-01 work
 Implement real DB connectivity/readiness, migration runner and rollback, durable leased worker, retry/dead-letter handling, redacted structured logs, correlation IDs, integration tests and secret scanning. Validate on supported hosting before any launch.
+
+## AI-02 draft: public Persian conversation engine
+- `conversation.py` enforces public-only approved reference excerpts and conservative escalation.
+- `openai_adapter.py` uses OpenAI Responses API with `store=False`; no API calls happen in offline tests.
+- No public knowledge ingestion, fact verification, webhook, user-facing route or messaging transport is connected yet.
+- The AI flag defaults to false. Do not enable in production without security and knowledge-source review.
