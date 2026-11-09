@@ -26,3 +26,8 @@ Implement real DB connectivity/readiness, migration runner and rollback, durable
 `knowledge/public-v1.json` contains non-published drafts only. `knowledge.py` loads
 explicitly approved, time-valid HTTPS-sourced entries and retrieves by keyword.
 No live website fetch or ingestion is performed.
+
+## AI-02 draft: public Persian conversation engine
+- `conversation.py` enforces public-only approved reference excerpts and conservative escalation.
+- `openai_adapter.py` uses OpenAI Responses API with `store=False`; no API calls happen in offline tests.
+- The AI flag defaults to false. Do not enable in production without security and knowledge-source review.
